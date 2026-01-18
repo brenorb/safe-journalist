@@ -10,13 +10,20 @@ requires-python = ">=3.12"
 dependencies = [
     "cbor2>=5.8.0",
     "cryptography>=46.0.3",
+    "fastapi>=0.115.0",
     "httpx>=0.28.1",
     "pynacl>=1.6.2",
     "python-dotenv>=1.2.1",
+    "uvicorn>=0.30.0",
 ]
 
 [project.scripts]
 safe-journalist = "safe_journalist:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+]
 
 [build-system]
 requires = ["uv_build>=0.9.24,<0.10.0"]

@@ -1,0 +1,56 @@
+# Solutions Index
+
+Auto-generated index of documented solutions. Last updated: 2026-01-18
+
+## By Category
+
+### code-organization/ (1)
+- [monolithic-module-refactor.md](code-organization/monolithic-module-refactor.md) - Refactoring Monolithic __init__.py into Focused Modules [medium]
+
+### documentation/ (1)
+- [COMMAND_IMPROVEMENTS.md](COMMAND_IMPROVEMENTS.md) - Compound Knowledge Integration - Command Improvements [implemented]
+
+### test-failures/ (1)
+- [temporary-directory-context-scope.md](test-failures/temporary-directory-context-scope.md) - TemporaryDirectory Context Manager Scope Bug in Tests [high]
+
+## By Severity
+
+### High (1)
+- test-failures/temporary-directory-context-scope.md
+
+### Medium (1)
+- code-organization/monolithic-module-refactor.md
+
+## By Date
+
+### 2026-01-18 (2)
+- test-failures/temporary-directory-context-scope.md
+- COMMAND_IMPROVEMENTS.md
+
+### 2026-01-17 (1)
+- code-organization/monolithic-module-refactor.md
+
+## Tags Index
+
+- `code-organization`: 1 solution
+- `compound-engineering`: 1 solution
+- `context-managers`: 1 solution
+- `fastapi-testing`: 1 solution
+- `knowledge-management`: 1 solution
+- `module-architecture`: 1 solution
+- `pytest`: 1 solution
+- `python`: 2 solutions
+- `python-architecture`: 1 solution
+- `refactoring`: 1 solution
+- `separation-of-concerns`: 1 solution
+- `technical-debt`: 1 solution
+- `tempfile`: 1 solution
+- `workflow-optimization`: 1 solution
+
+## Known Issues
+
+### Low Severity
+- **COSE Array Validation** (attestation.py): Accepts arrays with 3+ elements instead of requiring exactly 4 for COSE_Sign1 compliance
+  - File: `src/safe_journalist/attestation.py:17-18`
+  - Fix: Change `len(cose) < 3` to `len(cose) != 4`
+  - Status: Documented, not blocking
