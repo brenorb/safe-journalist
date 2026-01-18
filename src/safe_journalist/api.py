@@ -161,16 +161,6 @@ async def create_entry_from_audio(
     if len(audio_bytes) > 25 * 1024 * 1024:
         raise HTTPException(status_code=413, detail="audio file too large (max 25MB)")
 
-    try:
-        transcription = stt.transcribe_audio_bytes(
-            audio_bytes,
-            suffix=os.path.splitext(file.filename)[1] or ".wav",
-        )
-    except stt.SttDependencyError as e:
-        raise HTTPException(status_code=501, detail=str(e)) from e
-    except stt.SttTranscriptionError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
-
     timestamp = storage.generate_timestamp()
     base_dir = get_data_dir()
 
@@ -181,6 +171,13 @@ async def create_entry_from_audio(
         timestamp=timestamp,
         extension=extension,
     )
+
+    try:
+        transcription = stt.transcribe_audio_path(str(audio_path))
+    except stt.SttDependencyError as e:
+        raise HTTPException(status_code=501, detail=str(e)) from e
+    except stt.SttTranscriptionError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
     entry_path = storage.write_entry(
         text=transcription.text,

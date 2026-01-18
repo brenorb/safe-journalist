@@ -62,18 +62,14 @@ def _get_parakeet_model():
     return model
 
 
-def transcribe_audio_bytes(audio_bytes: bytes, *, suffix: str = ".wav") -> TranscriptionResult:
-    if not audio_bytes:
-        raise SttTranscriptionError("audio is empty")
+def transcribe_audio_path(path: str) -> TranscriptionResult:
+    if not path:
+        raise SttTranscriptionError("audio path is empty")
 
     model = _get_parakeet_model()
 
-    # NeMo's transcription helpers expect file paths.
     try:
-        with tempfile.NamedTemporaryFile(suffix=suffix, delete=True) as tmp:
-            tmp.write(audio_bytes)
-            tmp.flush()
-            texts = model.transcribe([tmp.name])
+        texts = model.transcribe([path])
     except Exception as e:
         raise SttTranscriptionError(f"Failed to transcribe audio: {e}") from e
 
@@ -87,3 +83,19 @@ def transcribe_audio_bytes(audio_bytes: bytes, *, suffix: str = ".wav") -> Trans
         raise SttTranscriptionError("Transcription produced empty text")
 
     return TranscriptionResult(text=text)
+
+
+def transcribe_audio_bytes(audio_bytes: bytes, *, suffix: str = ".wav") -> TranscriptionResult:
+    if not audio_bytes:
+        raise SttTranscriptionError("audio is empty")
+
+    # Used mainly for tests / callers that don't want to persist the upload.
+    try:
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=True) as tmp:
+            tmp.write(audio_bytes)
+            tmp.flush()
+            return transcribe_audio_path(tmp.name)
+    except SttTranscriptionError:
+        raise
+    except Exception as e:
+        raise SttTranscriptionError(f"Failed to transcribe audio: {e}") from e

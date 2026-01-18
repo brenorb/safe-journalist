@@ -34,7 +34,7 @@ class TestApi(TestCase):
             with patch.dict(os.environ, {"DATA_DIR": tmpdir}, clear=False):
                 with patch("safe_journalist.storage.generate_timestamp", return_value=timestamp):
                     with patch(
-                        "safe_journalist.stt.transcribe_audio_bytes",
+                        "safe_journalist.stt.transcribe_audio_path",
                         return_value=type("R", (), {"text": "hello from audio"})(),
                     ):
                         with TestClient(app) as client:

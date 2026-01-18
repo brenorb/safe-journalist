@@ -28,8 +28,12 @@ function showMessage(element, message, type = 'success') {
     element.textContent = message;
     element.className = `message ${type}`;
     element.style.display = 'block';
-    
-    // Auto-hide after 5 seconds
+
+    // Keep errors visible until next action.
+    if (type === 'error') {
+        return;
+    }
+
     setTimeout(() => {
         element.style.display = 'none';
     }, 5000);
