@@ -27,8 +27,7 @@ dev = [
 ]
 stt = [
     "torch>=2.2.0",
-    "torchaudio>=2.2.0",
-    "transformers>=4.40.0",
+    "nemo_toolkit[asr]>=2.0.0",
 ]
 
 [build-system]

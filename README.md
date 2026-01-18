@@ -29,7 +29,10 @@ Simple, clean web interface for non-technical users to test the system without u
 Send an audio clip and have it transcribed **locally** (no cloud STT) and stored as a normal entry.
 
 - Endpoint: `POST /entries/audio` (multipart form field `file`)
-- Configure model: set `STT_MODEL` to a Parakeet ASR model id (HuggingFace repo)
+- Configure model: set `STT_MODEL` to a Parakeet ASR model id (NeMo pretrained). Examples:
+  - `nvidia/parakeet-tdt-0.6b-v2`
+  - `nvidia/parakeet-ctc-0.6b`
+  - `nvidia/parakeet-rnnt-0.6b`
 - Install deps: `uv sync --extra stt`
 
 ### 🤖 Automatic AI Summarization

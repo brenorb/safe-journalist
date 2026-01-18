@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import tempfile
 from dataclasses import dataclass
 from functools import lru_cache
 
@@ -26,67 +27,67 @@ def _get_stt_model_id() -> str:
     model_id = os.getenv("STT_MODEL")
     if not model_id:
         raise SttNotConfiguredError(
-            "STT_MODEL is not set. Set STT_MODEL to a Parakeet model id (e.g. a HuggingFace repo)."
+            "STT_MODEL is not set. Set STT_MODEL to a Parakeet model id (e.g. "
+            "`nvidia/parakeet-tdt-0.6b-v2`)."
         )
     return model_id
 
 
 @lru_cache(maxsize=1)
-def _get_asr_pipeline():
+def _get_parakeet_model():
     try:
+        # NeMo uses torch under the hood.
         import torch
-        from transformers import pipeline
+        from nemo.collections.asr.models import ASRModel
     except Exception as e:  # pragma: no cover
         raise SttDependencyError(
-            "Missing STT dependencies. Install extras: `uv sync --extra stt`"
+            "Missing Parakeet STT dependencies. Install extras: `uv sync --extra stt`"
         ) from e
 
     model_id = _get_stt_model_id()
 
+    try:
+        model = ASRModel.from_pretrained(model_name=model_id)
+    except Exception as e:
+        raise SttDependencyError(f"Failed to load Parakeet model '{model_id}': {e}") from e
+
+    # Move to best available device.
     device = "cpu"
     if torch.cuda.is_available():
-        device = 0
+        device = "cuda"
     elif getattr(torch.backends, "mps", None) is not None and torch.backends.mps.is_available():
         device = "mps"
 
-    return pipeline(
-        task="automatic-speech-recognition",
-        model=model_id,
-        device=device,
-    )
+    try:
+        model = model.to(device)
+    except Exception:
+        # Some NeMo models don't implement .to() fully; keep default.
+        pass
+
+    model.eval()
+    return model
 
 
-def transcribe_audio_bytes(audio_bytes: bytes) -> TranscriptionResult:
+def transcribe_audio_bytes(audio_bytes: bytes, *, suffix: str = ".wav") -> TranscriptionResult:
     if not audio_bytes:
         raise SttTranscriptionError("audio is empty")
 
+    model = _get_parakeet_model()
+
+    # NeMo's transcription helpers expect file paths.
     try:
-        import io
-
-        import torchaudio
-    except Exception as e:  # pragma: no cover
-        raise SttDependencyError(
-            "Missing audio dependencies. Install extras: `uv sync --extra stt`"
-        ) from e
-
-    asr = _get_asr_pipeline()
-
-    try:
-        waveform, sample_rate = torchaudio.load(io.BytesIO(audio_bytes))
-        if sample_rate != 16000:
-            waveform = torchaudio.functional.resample(waveform, sample_rate, 16000)
-            sample_rate = 16000
-
-        # ASR pipeline accepts dict with raw audio.
-        result = asr({"raw": waveform.squeeze().numpy(), "sampling_rate": sample_rate})
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=True) as tmp:
+            tmp.write(audio_bytes)
+            tmp.flush()
+            texts = model.transcribe([tmp.name])
     except Exception as e:
         raise SttTranscriptionError(f"Failed to transcribe audio: {e}") from e
 
     text = ""
-    if isinstance(result, dict):
-        text = str(result.get("text", "")).strip()
+    if isinstance(texts, list) and texts:
+        text = str(texts[0]).strip()
     else:
-        text = str(result).strip()
+        text = str(texts).strip()
 
     if not text:
         raise SttTranscriptionError("Transcription produced empty text")
