@@ -5,6 +5,10 @@ const entryForm = document.getElementById('entryForm');
 const entryText = document.getElementById('entryText');
 const submitBtn = document.getElementById('submitBtn');
 const entryMessage = document.getElementById('entryMessage');
+const audioForm = document.getElementById('audioForm');
+const audioFile = document.getElementById('audioFile');
+const audioSubmitBtn = document.getElementById('audioSubmitBtn');
+const audioMessage = document.getElementById('audioMessage');
 const actionMessage = document.getElementById('actionMessage');
 const refreshStatusBtn = document.getElementById('refreshStatusBtn');
 const viewAlertBtn = document.getElementById('viewAlertBtn');
@@ -78,6 +82,39 @@ async function submitEntry(text) {
     } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = 'Submit Entry';
+    }
+}
+
+async function submitAudio(file) {
+    audioSubmitBtn.disabled = true;
+    audioSubmitBtn.textContent = 'Transcribing...';
+
+    try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch('/entries/audio', {
+            method: 'POST',
+            body: formData,
+        });
+
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            throw new Error(error.detail || 'Failed to transcribe audio');
+        }
+
+        await response.json();
+        showMessage(audioMessage, '✓ Audio transcribed and saved!', 'success');
+        audioFile.value = '';
+
+        await refreshStatus();
+        await loadRecentEntries();
+    } catch (error) {
+        showMessage(audioMessage, `✗ Error: ${error.message}`, 'error');
+        throw error;
+    } finally {
+        audioSubmitBtn.disabled = false;
+        audioSubmitBtn.textContent = 'Transcribe & Submit';
     }
 }
 
@@ -240,6 +277,17 @@ entryForm.addEventListener('submit', async (e) => {
     }
     
     await submitEntry(text);
+});
+
+audioForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    if (!audioFile.files || audioFile.files.length === 0) {
+        showMessage(audioMessage, '✗ Please choose an audio file', 'error');
+        return;
+    }
+
+    await submitAudio(audioFile.files[0]);
 });
 
 refreshStatusBtn.addEventListener('click', async () => {

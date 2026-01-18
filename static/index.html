@@ -28,6 +28,18 @@
                 </button>
             </form>
             <div id="entryMessage" class="message"></div>
+
+            <div class="divider"></div>
+
+            <h3>Send Audio</h3>
+            <p class="hint">Upload an audio clip to transcribe locally and save as an entry.</p>
+            <form id="audioForm">
+                <input id="audioFile" type="file" accept="audio/*" required />
+                <button type="submit" id="audioSubmitBtn" class="btn btn-secondary">
+                    Transcribe & Submit
+                </button>
+            </form>
+            <div id="audioMessage" class="message"></div>
         </section>
 
         <!-- Status Display -->

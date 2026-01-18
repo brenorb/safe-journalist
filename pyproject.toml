@@ -14,6 +14,7 @@ dependencies = [
     "httpx>=0.28.1",
     "pynacl>=1.6.2",
     "python-dotenv>=1.2.1",
+    "python-multipart>=0.0.9",
     "uvicorn>=0.30.0",
 ]
 
@@ -23,6 +24,11 @@ safe-journalist = "safe_journalist:main"
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0.0",
+]
+stt = [
+    "torch>=2.2.0",
+    "torchaudio>=2.2.0",
+    "transformers>=4.40.0",
 ]
 
 [build-system]

@@ -27,6 +27,32 @@ class TestApi(TestCase):
                     self.assertEqual(payload["timestamp"], timestamp)
                     self.assertEqual(Path(expected_path).read_text(encoding="utf-8"), "hello")
 
+    def test_post_audio_writes_file(self) -> None:
+        timestamp = "20260117T123457Z"
+
+        with TemporaryDirectory() as tmpdir:
+            with patch.dict(os.environ, {"DATA_DIR": tmpdir}, clear=False):
+                with patch("safe_journalist.storage.generate_timestamp", return_value=timestamp):
+                    with patch(
+                        "safe_journalist.stt.transcribe_audio_bytes",
+                        return_value=type("R", (), {"text": "hello from audio"})(),
+                    ):
+                        with TestClient(app) as client:
+                            response = client.post(
+                                "/entries/audio",
+                                files={"file": ("clip.wav", b"fake", "audio/wav")},
+                            )
+
+                    self.assertEqual(response.status_code, 200)
+                    payload = response.json()
+                    expected_path = str(Path(tmpdir) / "entries" / f"{timestamp}-entry.md")
+                    self.assertEqual(payload["path"], expected_path)
+                    self.assertEqual(payload["timestamp"], timestamp)
+                    self.assertEqual(payload["text"], "hello from audio")
+                    self.assertEqual(
+                        Path(expected_path).read_text(encoding="utf-8"), "hello from audio"
+                    )
+
     def test_missing_text_returns_4xx(self) -> None:
         with TemporaryDirectory() as tmpdir:
             with patch.dict(os.environ, {"DATA_DIR": tmpdir}, clear=False):
