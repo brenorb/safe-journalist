@@ -32,13 +32,15 @@
             <div class="divider"></div>
 
             <h3>Send Audio</h3>
-            <p class="hint">Upload an audio clip to transcribe locally and save as an entry.</p>
-            <form id="audioForm">
-                <input id="audioFile" type="file" accept="audio/*" required />
-                <button type="submit" id="audioSubmitBtn" class="btn btn-secondary">
-                    Transcribe & Submit
+            <p class="hint">Tap record, then stop to send your audio for local transcription.</p>
+            <div id="audioControls" class="audio-controls">
+                <button type="button" id="recordBtn" class="btn btn-secondary">
+                    Start Recording
                 </button>
-            </form>
+                <button type="button" id="stopBtn" class="btn btn-secondary" disabled>
+                    Stop & Send
+                </button>
+            </div>
             <div id="audioMessage" class="message"></div>
         </section>
 

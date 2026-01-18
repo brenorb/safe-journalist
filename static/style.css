@@ -89,16 +89,11 @@ textarea:focus {
     border-color: var(--primary-color);
 }
 
-#audioForm {
+.audio-controls {
     display: flex;
     gap: 12px;
     align-items: center;
     flex-wrap: wrap;
-}
-
-#audioFile {
-    flex: 1;
-    min-width: 240px;
 }
 
 .card h3 {

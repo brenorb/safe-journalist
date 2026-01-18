@@ -11,6 +11,7 @@ from pydantic import BaseModel
 
 from safe_journalist import storage, summarizer
 from safe_journalist import stt
+from safe_journalist.audio_storage import write_audio_entry
 from safe_journalist.session import MapleSession, create_session
 
 # Load environment variables from .env file
@@ -27,8 +28,9 @@ class TextEntryOut(BaseModel):
 
 
 class AudioEntryOut(BaseModel):
-    path: str
     timestamp: str
+    audio_path: str
+    entry_path: str
     text: str
 
 
@@ -160,7 +162,10 @@ async def create_entry_from_audio(
         raise HTTPException(status_code=413, detail="audio file too large (max 25MB)")
 
     try:
-        transcription = stt.transcribe_audio_bytes(audio_bytes, suffix=os.path.splitext(file.filename)[1] or ".wav")
+        transcription = stt.transcribe_audio_bytes(
+            audio_bytes,
+            suffix=os.path.splitext(file.filename)[1] or ".wav",
+        )
     except stt.SttDependencyError as e:
         raise HTTPException(status_code=501, detail=str(e)) from e
     except stt.SttTranscriptionError as e:
@@ -169,7 +174,15 @@ async def create_entry_from_audio(
     timestamp = storage.generate_timestamp()
     base_dir = get_data_dir()
 
-    path = storage.write_entry(
+    extension = os.path.splitext(file.filename)[1] or ".webm"
+    audio_path = write_audio_entry(
+        audio_bytes,
+        base_dir=base_dir,
+        timestamp=timestamp,
+        extension=extension,
+    )
+
+    entry_path = storage.write_entry(
         text=transcription.text,
         base_dir=base_dir,
         timestamp=timestamp,
@@ -182,7 +195,12 @@ async def create_entry_from_audio(
         print(f"Triggering summarization: {count} entries since last summary (threshold: {trigger_count})")
         background_tasks.add_task(run_summarization)
 
-    return AudioEntryOut(path=str(path), timestamp=timestamp, text=transcription.text)
+    return AudioEntryOut(
+        timestamp=timestamp,
+        audio_path=str(audio_path),
+        entry_path=str(entry_path),
+        text=transcription.text,
+    )
 
 
 @app.post("/summarize")

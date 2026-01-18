@@ -5,9 +5,8 @@ const entryForm = document.getElementById('entryForm');
 const entryText = document.getElementById('entryText');
 const submitBtn = document.getElementById('submitBtn');
 const entryMessage = document.getElementById('entryMessage');
-const audioForm = document.getElementById('audioForm');
-const audioFile = document.getElementById('audioFile');
-const audioSubmitBtn = document.getElementById('audioSubmitBtn');
+const recordBtn = document.getElementById('recordBtn');
+const stopBtn = document.getElementById('stopBtn');
 const audioMessage = document.getElementById('audioMessage');
 const actionMessage = document.getElementById('actionMessage');
 const refreshStatusBtn = document.getElementById('refreshStatusBtn');
@@ -85,13 +84,13 @@ async function submitEntry(text) {
     }
 }
 
-async function submitAudio(file) {
-    audioSubmitBtn.disabled = true;
-    audioSubmitBtn.textContent = 'Transcribing...';
+async function submitAudioBlob(blob, filename = 'recording.webm') {
+    stopBtn.disabled = true;
+    stopBtn.textContent = 'Sending...';
 
     try {
         const formData = new FormData();
-        formData.append('file', file);
+        formData.append('file', blob, filename);
 
         const response = await fetch('/entries/audio', {
             method: 'POST',
@@ -105,7 +104,6 @@ async function submitAudio(file) {
 
         await response.json();
         showMessage(audioMessage, '✓ Audio transcribed and saved!', 'success');
-        audioFile.value = '';
 
         await refreshStatus();
         await loadRecentEntries();
@@ -113,8 +111,8 @@ async function submitAudio(file) {
         showMessage(audioMessage, `✗ Error: ${error.message}`, 'error');
         throw error;
     } finally {
-        audioSubmitBtn.disabled = false;
-        audioSubmitBtn.textContent = 'Transcribe & Submit';
+        stopBtn.disabled = false;
+        stopBtn.textContent = 'Stop & Send';
     }
 }
 
@@ -279,15 +277,56 @@ entryForm.addEventListener('submit', async (e) => {
     await submitEntry(text);
 });
 
-audioForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
+let mediaRecorder = null;
+let recordedChunks = [];
 
-    if (!audioFile.files || audioFile.files.length === 0) {
-        showMessage(audioMessage, '✗ Please choose an audio file', 'error');
+recordBtn.addEventListener('click', async () => {
+    try {
+        recordBtn.disabled = true;
+        showMessage(audioMessage, 'Requesting microphone permission...', 'info');
+
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+        recordedChunks = [];
+        mediaRecorder = new MediaRecorder(stream);
+
+        mediaRecorder.addEventListener('dataavailable', (event) => {
+            if (event.data && event.data.size > 0) {
+                recordedChunks.push(event.data);
+            }
+        });
+
+        mediaRecorder.addEventListener('stop', async () => {
+            // Stop tracks so the browser releases the mic.
+            stream.getTracks().forEach((t) => t.stop());
+
+            const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+            const filename = `recording.${(blob.type.split('/')[1] || 'webm').split(';')[0]}`;
+            await submitAudioBlob(blob, filename);
+        });
+
+        mediaRecorder.start();
+        showMessage(audioMessage, 'Recording… tap “Stop & Send” when done.', 'info');
+
+        recordBtn.textContent = 'Recording…';
+        stopBtn.disabled = false;
+    } catch (error) {
+        showMessage(audioMessage, `✗ Mic error: ${error.message || error}`, 'error');
+        recordBtn.disabled = false;
+    }
+});
+
+stopBtn.addEventListener('click', () => {
+    if (!mediaRecorder || mediaRecorder.state !== 'recording') {
+        showMessage(audioMessage, '✗ Not recording', 'error');
         return;
     }
 
-    await submitAudio(audioFile.files[0]);
+    stopBtn.disabled = true;
+    mediaRecorder.stop();
+
+    recordBtn.disabled = false;
+    recordBtn.textContent = 'Start Recording';
 });
 
 refreshStatusBtn.addEventListener('click', async () => {

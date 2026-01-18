@@ -40,18 +40,24 @@ class TestApi(TestCase):
                         with TestClient(app) as client:
                             response = client.post(
                                 "/entries/audio",
-                                files={"file": ("clip.wav", b"fake", "audio/wav")},
+                                files={"file": ("clip.webm", b"fake", "audio/webm")},
                             )
 
                     self.assertEqual(response.status_code, 200)
                     payload = response.json()
-                    expected_path = str(Path(tmpdir) / "entries" / f"{timestamp}-entry.md")
-                    self.assertEqual(payload["path"], expected_path)
+
+                    expected_entry_path = str(Path(tmpdir) / "entries" / f"{timestamp}-entry.md")
+                    expected_audio_path = str(Path(tmpdir) / "entries" / "audio" / f"{timestamp}-audio.webm")
+
+                    self.assertEqual(payload["entry_path"], expected_entry_path)
+                    self.assertEqual(payload["audio_path"], expected_audio_path)
                     self.assertEqual(payload["timestamp"], timestamp)
                     self.assertEqual(payload["text"], "hello from audio")
+
                     self.assertEqual(
-                        Path(expected_path).read_text(encoding="utf-8"), "hello from audio"
+                        Path(expected_entry_path).read_text(encoding="utf-8"), "hello from audio"
                     )
+                    self.assertEqual(Path(expected_audio_path).read_bytes(), b"fake")
 
     def test_missing_text_returns_4xx(self) -> None:
         with TemporaryDirectory() as tmpdir:
