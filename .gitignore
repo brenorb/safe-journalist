@@ -13,3 +13,5 @@ wheels/
 .specstory
 .cursorindexingignore
 .cursor/
+data/**/*.md
+data/**/*.json

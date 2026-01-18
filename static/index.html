@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Safe Journalist</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🛡️ Safe Journalist</h1>
+            <p class="subtitle">Secure field reporting with automatic AI summarization</p>
+        </header>
+
+        <!-- Entry Form -->
+        <section class="card">
+            <h2>Create Entry</h2>
+            <form id="entryForm">
+                <textarea 
+                    id="entryText" 
+                    placeholder="Type your entry here... (e.g., location updates, observations, safety notes)"
+                    rows="6"
+                    required
+                ></textarea>
+                <button type="submit" id="submitBtn" class="btn btn-primary">
+                    Submit Entry
+                </button>
+            </form>
+            <div id="entryMessage" class="message"></div>
+        </section>
+
+        <!-- Status Display -->
+        <section class="card">
+            <h2>Status</h2>
+            <div id="statusDisplay" class="status-display">
+                <div class="status-item">
+                    <span class="label">Total Entries:</span>
+                    <span id="totalEntries" class="value">-</span>
+                </div>
+                <div class="status-item">
+                    <span class="label">Summaries:</span>
+                    <span id="totalSummaries" class="value">-</span>
+                </div>
+                <div class="status-item">
+                    <span class="label">Since Last Summary:</span>
+                    <span id="entriesSinceLastSummary" class="value">-</span>
+                    <span id="triggerInfo" class="trigger-info"></span>
+                </div>
+            </div>
+            <button id="refreshStatusBtn" class="btn btn-secondary">
+                Refresh Status
+            </button>
+        </section>
+
+        <!-- Actions -->
+        <section class="card">
+            <h2>Actions</h2>
+            <div class="action-buttons">
+                <button id="viewAlertBtn" class="btn btn-primary">
+                    View Latest Alert
+                </button>
+                <button id="manualSummarizeBtn" class="btn btn-secondary">
+                    Manual Summarize
+                </button>
+            </div>
+            <div id="actionMessage" class="message"></div>
+        </section>
+
+        <!-- Alert Display (hidden by default) -->
+        <section id="alertSection" class="card" style="display: none;">
+            <h2>Latest Alert Summary</h2>
+            <div id="alertContent" class="alert-content"></div>
+            <div class="alert-meta">
+                <span id="alertTimestamp"></span>
+            </div>
+        </section>
+
+        <!-- Recent Entries -->
+        <section class="card">
+            <h2>Recent Entries</h2>
+            <div id="recentEntries" class="entries-list">
+                <p class="empty-state">No entries yet</p>
+            </div>
+        </section>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

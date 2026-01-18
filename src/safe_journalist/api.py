@@ -3,11 +3,17 @@ from __future__ import annotations
 import os
 
 import httpx
+from dotenv import load_dotenv
 from fastapi import BackgroundTasks, FastAPI, HTTPException
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from safe_journalist import storage, summarizer
 from safe_journalist.session import MapleSession, create_session
+
+# Load environment variables from .env file
+load_dotenv()
 
 
 class TextEntryIn(BaseModel):
@@ -22,6 +28,12 @@ class TextEntryOut(BaseModel):
 class AlertOut(BaseModel):
     summary: str
     timestamp: str
+    path: str
+
+
+class EntryOut(BaseModel):
+    timestamp: str
+    preview: str
     path: str
 
 
@@ -85,6 +97,15 @@ def run_summarization() -> None:
 
 app = FastAPI()
 
+# Mount static files for CSS/JS
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
+@app.get("/")
+def read_root() -> FileResponse:
+    """Serve the frontend HTML"""
+    return FileResponse("static/index.html")
+
 
 @app.post("/entries", response_model=TextEntryOut)
 def create_entry(payload: TextEntryIn, background_tasks: BackgroundTasks) -> TextEntryOut:
@@ -141,6 +162,42 @@ def get_status() -> dict:
         "trigger_count": trigger_count,
         "will_trigger_on_next_entry": count_since_last >= trigger_count,
     }
+
+
+@app.get("/entries", response_model=list[EntryOut])
+def list_entries_endpoint(limit: int = 10) -> list[EntryOut]:
+    """List recent entries (newest first)"""
+    # Validate limit parameter
+    if limit <= 0 or limit > 100:
+        raise HTTPException(
+            status_code=400,
+            detail="limit must be between 1 and 100"
+        )
+    
+    base_dir = get_data_dir()
+    all_entries = storage.list_entries(base_dir)
+    
+    # Take last N entries (newest) and reverse for newest-first order
+    recent_entries = all_entries[-limit:] if len(all_entries) > limit else all_entries
+    recent_entries = list(reversed(recent_entries))
+    
+    # Build response
+    result = []
+    for entry_path in recent_entries:
+        # Extract timestamp from filename: "20260117T123456Z-entry.md" -> "20260117T123456Z"
+        timestamp = entry_path.stem.replace("-entry", "")
+        
+        # Read content and truncate to 200 chars for preview
+        content = entry_path.read_text(encoding="utf-8")
+        preview = content[:200]
+        
+        result.append(EntryOut(
+            timestamp=timestamp,
+            preview=preview,
+            path=str(entry_path),
+        ))
+    
+    return result
 
 
 @app.get("/alert", response_model=AlertOut)

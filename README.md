@@ -9,6 +9,21 @@ This reimplements the bare minimum of the OpenSecret flow:
 
 ## Features
 
+### 🌐 Web Frontend
+
+Simple, clean web interface for non-technical users to test the system without using curl or CLI commands.
+
+**Access at**: `http://localhost:8000/` (after starting the server)
+
+**Features:**
+- Create entries with textarea form
+- View real-time status (entries count, summaries count, trigger info)
+- View latest alert summary
+- Manual summarization trigger
+- Recent entries list (last 5)
+- Mobile-responsive design
+- Auto-refresh after actions
+
 ### 🤖 Automatic AI Summarization
 
 Every 3rd entry automatically triggers an encrypted AI call that generates a concise summary of all entries. Perfect for emergency contacts who need actionable information without reading dozens of individual check-ins.
@@ -20,38 +35,82 @@ Every 3rd entry automatically triggers an encrypted AI call that generates a con
 - All data encrypted end-to-end via Maple's secure enclave
 
 ## Setup
+
+Create a `.env` file in the project root (optional):
+
 ```bash
-cp .env.example .env
-# edit .env with your MAPLE_API_KEY
-uv run safe-journalist
+# .env
+MAPLE_API_KEY=your-maple-api-key-here
+DATA_DIR=./data
+MAPLE_API_URL=https://enclave.trymaple.ai
+MAPLE_MODEL=llama-3.3-70b
+SUMMARY_TRIGGER_COUNT=3
 ```
 
-## API
+The server automatically loads this file on startup.
 
-### Start the Server
+## Quick Start
+
+### 1. Configure Environment (Optional)
+
+Create a `.env` file in the project root:
 ```bash
-# Set environment variables
+MAPLE_API_KEY=your-key-here  # Optional, only needed for AI summarization
+DATA_DIR=./data
+```
+
+Or export variables manually (will override `.env`):
+```bash
 export MAPLE_API_KEY="your-key"
 export DATA_DIR="./data"
-
-# Start server
-uv run uvicorn safe_journalist.api:app
 ```
 
-### Create Entries
+### 2. Start the Server
+```bash
+uv run uvicorn safe_journalist.api:app --reload --port 8000
+```
+
+The server automatically loads `.env` file if present.
+
+### 3. Use the Web Interface
+
+Open your browser to **http://localhost:8000/**
+
+The web interface provides:
+- ✅ Entry creation form
+- ✅ Status dashboard
+- ✅ Alert viewer
+- ✅ Recent entries list
+- ✅ Manual summarization trigger
+
+### 4. Or Use the API Directly
+
+#### Create Entries
 ```bash
 curl -X POST http://127.0.0.1:8000/entries \
   -H "content-type: application/json" \
   -d '{"text":"Arrived at protest. 200+ people. Police present."}'
 ```
 
-### Check Status
+#### List Recent Entries
+```bash
+curl http://127.0.0.1:8000/entries?limit=5
+# Returns: array of recent entries with timestamp and preview
+```
+
+#### Check Status
 ```bash
 curl http://127.0.0.1:8000/status
 # Returns: entries count, summaries count, trigger threshold
 ```
 
-### Manual Summarization
+#### Get Latest Alert
+```bash
+curl http://127.0.0.1:8000/alert
+# Returns: latest summary with timestamp
+```
+
+#### Manual Summarization
 ```bash
 curl -X POST http://127.0.0.1:8000/summarize
 # Useful for testing or forcing a summary before threshold
@@ -84,10 +143,9 @@ data/
 Run the included demo script to see auto-summarization in action:
 
 ```bash
-# Start the API server first
-export MAPLE_API_KEY="your-key"
-export DATA_DIR="./demo-data"
-uv run uvicorn safe_journalist.api:app
+# Start the API server first (reads from .env automatically)
+# Or set variables temporarily:
+DATA_DIR=./demo-data uv run uvicorn safe_journalist.api:app
 
 # In another terminal, run the demo
 ./demo_test.sh
