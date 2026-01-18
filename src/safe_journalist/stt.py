@@ -28,7 +28,7 @@ def _get_stt_model_id() -> str:
     if not model_id:
         raise SttNotConfiguredError(
             "STT_MODEL is not set. Set STT_MODEL to a Parakeet model id (e.g. "
-            "`nvidia/parakeet-tdt-0.6b-v2`)."
+            "`nvidia/parakeet-tdt-0.6b-v3`)."
         )
     return model_id
 

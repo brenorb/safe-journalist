@@ -30,7 +30,7 @@ Send an audio clip and have it transcribed **locally** (no cloud STT) and stored
 
 - Endpoint: `POST /entries/audio` (multipart form field `file`)
 - Configure model: set `STT_MODEL` to a Parakeet ASR model id (NeMo pretrained). Examples:
-  - `nvidia/parakeet-tdt-0.6b-v2`
+  - `nvidia/parakeet-tdt-0.6b-v3`
   - `nvidia/parakeet-ctc-0.6b`
   - `nvidia/parakeet-rnnt-0.6b`
 - Install deps: `uv sync --extra stt`
