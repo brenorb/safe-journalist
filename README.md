@@ -34,7 +34,7 @@ Send an audio clip and have it transcribed **locally** (no cloud STT) and stored
   - `nvidia/parakeet-tdt-0.6b-v3`
   - `nvidia/parakeet-ctc-0.6b`
   - `nvidia/parakeet-rnnt-0.6b`
-- Install deps: `uv sync --extra stt`
+- Install deps: `uv sync --extra stt` (and add `--extra dev` if you want tests)
 
 ### 🤖 Automatic AI Summarization
 
