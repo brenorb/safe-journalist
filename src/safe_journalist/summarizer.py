@@ -50,17 +50,25 @@ def generate_summary(
 New notes:
 {entries_text}
 
-Generate a concise 3-5 bullet summary with the most relevant and up to date actionable information for emergency contacts."""
+The summary should follow this format: 
+- Anjan Sundaram is in X situation (specify the estimated threat level) and needs help
+- He has been in Y locations over the past few days, meeting Z people, and expressed concerned about T things
+- These are the concrete 3-5 things you can do to help Anjan (followed by 3-5 bullet points with recommended actions, including contacting Anjan's embassy, contacting his employer, contacting members in the community that he was in, contacting certain peers) 
+"""
     else:
         # No previous summary - use all entries
         entries_text = "\n\n".join([f"- {p.read_text(encoding='utf-8')}" for p in entries])
         prompt = f"""Notes from journalist:
 {entries_text}
 
-Generate a concise 3-5 bullet summary with the most relevant and up to date actionable information for emergency contacts."""
+The summary should follow this format: 
+- Anjan Sundaram is in X situation (specify the estimated threat level) and needs help
+- He has been in Y locations over the past few days, meeting Z people, and expressed concerned about T things
+- These are the concrete 3-5 things you can do to help Anjan (followed by 3-5 bullet points with recommended actions, including contacting Anjan's embassy, contacting his employer, contacting members in the community that he was in, contacting certain peers) 
+"""
     
     # Call AI with encrypted request
-    print(f"Calling AI to generate summary...")
+    print("Calling AI to generate summary...")
     result = encrypted_openai_call(
         session=session,
         api_key=api_key,
