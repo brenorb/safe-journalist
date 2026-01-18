@@ -6,10 +6,6 @@ from dataclasses import dataclass
 from functools import lru_cache
 
 
-class SttNotConfiguredError(RuntimeError):
-    pass
-
-
 class SttDependencyError(RuntimeError):
     pass
 
@@ -23,14 +19,12 @@ class TranscriptionResult:
     text: str
 
 
+DEFAULT_STT_MODEL_ID = "nvidia/parakeet-tdt-0.6b-v3"
+
+
 def _get_stt_model_id() -> str:
-    model_id = os.getenv("STT_MODEL")
-    if not model_id:
-        raise SttNotConfiguredError(
-            "STT_MODEL is not set. Set STT_MODEL to a Parakeet model id (e.g. "
-            "`nvidia/parakeet-tdt-0.6b-v3`)."
-        )
-    return model_id
+    model_id = os.getenv("STT_MODEL", "").strip()
+    return model_id or DEFAULT_STT_MODEL_ID
 
 
 @lru_cache(maxsize=1)

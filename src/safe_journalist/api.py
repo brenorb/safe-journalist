@@ -161,8 +161,6 @@ async def create_entry_from_audio(
 
     try:
         transcription = stt.transcribe_audio_bytes(audio_bytes, suffix=os.path.splitext(file.filename)[1] or ".wav")
-    except stt.SttNotConfiguredError as e:
-        raise HTTPException(status_code=501, detail=str(e)) from e
     except stt.SttDependencyError as e:
         raise HTTPException(status_code=501, detail=str(e)) from e
     except stt.SttTranscriptionError as e:
