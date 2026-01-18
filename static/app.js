@@ -103,7 +103,15 @@ async function submitAudioBlob(blob, filename = 'recording.webm') {
 
         if (!response.ok) {
             const error = await response.json().catch(() => ({}));
-            throw new Error(error.detail || 'Failed to transcribe audio');
+            const detail = error.detail;
+            if (typeof detail === 'string') {
+                throw new Error(detail);
+            }
+            if (detail && typeof detail === 'object') {
+                const msg = detail.error || JSON.stringify(detail);
+                throw new Error(msg);
+            }
+            throw new Error('Failed to transcribe audio');
         }
 
         await response.json();

@@ -177,7 +177,14 @@ async def create_entry_from_audio(
     except stt.SttDependencyError as e:
         raise HTTPException(status_code=501, detail=str(e)) from e
     except stt.SttTranscriptionError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": str(e),
+                "timestamp": timestamp,
+                "audio_path": str(audio_path),
+            },
+        ) from e
 
     entry_path = storage.write_entry(
         text=transcription.text,
