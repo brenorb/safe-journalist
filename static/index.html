@@ -28,6 +28,20 @@
                 </button>
             </form>
             <div id="entryMessage" class="message"></div>
+
+            <div class="divider"></div>
+
+            <h3>Send Audio</h3>
+            <p class="hint">Tap record, then stop to send your audio for local transcription.</p>
+            <div id="audioControls" class="audio-controls">
+                <button type="button" id="recordBtn" class="btn btn-secondary">
+                    Start Recording
+                </button>
+                <button type="button" id="stopBtn" class="btn btn-secondary" disabled>
+                    Stop & Send
+                </button>
+            </div>
+            <div id="audioMessage" class="message"></div>
         </section>
 
         <!-- Status Display -->

@@ -24,6 +24,18 @@ Simple, clean web interface for non-technical users to test the system without u
 - Mobile-responsive design
 - Auto-refresh after actions
 
+### 🎙️ Local Speech-to-Text (Audio Entries)
+
+Send an audio clip and have it transcribed **locally** (no cloud STT) and stored as a normal entry.
+
+- Endpoint: `POST /entries/audio` (multipart form field `file`)
+- Default model: `nvidia/parakeet-tdt-0.6b-v3`
+- Override: set `STT_MODEL` to a Parakeet ASR model id (NeMo pretrained). Examples:
+  - `nvidia/parakeet-tdt-0.6b-v3`
+  - `nvidia/parakeet-ctc-0.6b`
+  - `nvidia/parakeet-rnnt-0.6b`
+- Install deps: `uv sync --extra stt` (and add `--extra dev` if you want tests)
+
 ### 🤖 Automatic AI Summarization
 
 Every 3rd entry automatically triggers an encrypted AI call that generates a concise summary of all entries. Perfect for emergency contacts who need actionable information without reading dozens of individual check-ins.

@@ -5,6 +5,9 @@ const entryForm = document.getElementById('entryForm');
 const entryText = document.getElementById('entryText');
 const submitBtn = document.getElementById('submitBtn');
 const entryMessage = document.getElementById('entryMessage');
+const recordBtn = document.getElementById('recordBtn');
+const stopBtn = document.getElementById('stopBtn');
+const audioMessage = document.getElementById('audioMessage');
 const actionMessage = document.getElementById('actionMessage');
 const refreshStatusBtn = document.getElementById('refreshStatusBtn');
 const viewAlertBtn = document.getElementById('viewAlertBtn');
@@ -25,8 +28,12 @@ function showMessage(element, message, type = 'success') {
     element.textContent = message;
     element.className = `message ${type}`;
     element.style.display = 'block';
-    
-    // Auto-hide after 5 seconds
+
+    // Keep errors visible until next action.
+    if (type === 'error') {
+        return;
+    }
+
     setTimeout(() => {
         element.style.display = 'none';
     }, 5000);
@@ -78,6 +85,46 @@ async function submitEntry(text) {
     } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = 'Submit Entry';
+    }
+}
+
+async function submitAudioBlob(blob, filename = 'recording.webm') {
+    stopBtn.disabled = true;
+    stopBtn.textContent = 'Sending...';
+
+    try {
+        const formData = new FormData();
+        formData.append('file', blob, filename);
+
+        const response = await fetch('/entries/audio', {
+            method: 'POST',
+            body: formData,
+        });
+
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            const detail = error.detail;
+            if (typeof detail === 'string') {
+                throw new Error(detail);
+            }
+            if (detail && typeof detail === 'object') {
+                const msg = detail.error || JSON.stringify(detail);
+                throw new Error(msg);
+            }
+            throw new Error('Failed to transcribe audio');
+        }
+
+        await response.json();
+        showMessage(audioMessage, '✓ Audio transcribed and saved!', 'success');
+
+        await refreshStatus();
+        await loadRecentEntries();
+    } catch (error) {
+        showMessage(audioMessage, `✗ Error: ${error.message}`, 'error');
+        throw error;
+    } finally {
+        stopBtn.disabled = false;
+        stopBtn.textContent = 'Stop & Send';
     }
 }
 
@@ -240,6 +287,58 @@ entryForm.addEventListener('submit', async (e) => {
     }
     
     await submitEntry(text);
+});
+
+let mediaRecorder = null;
+let recordedChunks = [];
+
+recordBtn.addEventListener('click', async () => {
+    try {
+        recordBtn.disabled = true;
+        showMessage(audioMessage, 'Requesting microphone permission...', 'info');
+
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+        recordedChunks = [];
+        mediaRecorder = new MediaRecorder(stream);
+
+        mediaRecorder.addEventListener('dataavailable', (event) => {
+            if (event.data && event.data.size > 0) {
+                recordedChunks.push(event.data);
+            }
+        });
+
+        mediaRecorder.addEventListener('stop', async () => {
+            // Stop tracks so the browser releases the mic.
+            stream.getTracks().forEach((t) => t.stop());
+
+            const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+            const filename = `recording.${(blob.type.split('/')[1] || 'webm').split(';')[0]}`;
+            await submitAudioBlob(blob, filename);
+        });
+
+        mediaRecorder.start();
+        showMessage(audioMessage, 'Recording… tap “Stop & Send” when done.', 'info');
+
+        recordBtn.textContent = 'Recording…';
+        stopBtn.disabled = false;
+    } catch (error) {
+        showMessage(audioMessage, `✗ Mic error: ${error.message || error}`, 'error');
+        recordBtn.disabled = false;
+    }
+});
+
+stopBtn.addEventListener('click', () => {
+    if (!mediaRecorder || mediaRecorder.state !== 'recording') {
+        showMessage(audioMessage, '✗ Not recording', 'error');
+        return;
+    }
+
+    stopBtn.disabled = true;
+    mediaRecorder.stop();
+
+    recordBtn.disabled = false;
+    recordBtn.textContent = 'Start Recording';
 });
 
 refreshStatusBtn.addEventListener('click', async () => {
