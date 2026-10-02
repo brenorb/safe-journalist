@@ -4,12 +4,14 @@ import os
 
 import httpx
 from dotenv import load_dotenv
-from fastapi import BackgroundTasks, FastAPI, HTTPException
+from fastapi import BackgroundTasks, FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from safe_journalist import storage, summarizer
+from safe_journalist import stt
+from safe_journalist.audio_storage import write_audio_entry
 from safe_journalist.session import MapleSession, create_session
 
 # Load environment variables from .env file
@@ -23,6 +25,13 @@ class TextEntryIn(BaseModel):
 class TextEntryOut(BaseModel):
     path: str
     timestamp: str
+
+
+class AudioEntryOut(BaseModel):
+    timestamp: str
+    audio_path: str
+    entry_path: str
+    text: str
 
 
 class AlertOut(BaseModel):
@@ -131,6 +140,71 @@ def create_entry(payload: TextEntryIn, background_tasks: BackgroundTasks) -> Tex
         background_tasks.add_task(run_summarization)
     
     return TextEntryOut(path=str(path), timestamp=timestamp)
+
+
+@app.post("/entries/audio", response_model=AudioEntryOut)
+async def create_entry_from_audio(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+) -> AudioEntryOut:
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="file is required")
+
+    if file.content_type and not file.content_type.startswith("audio/"):
+        raise HTTPException(status_code=400, detail="file must be an audio/* upload")
+
+    audio_bytes = await file.read()
+    if not audio_bytes:
+        raise HTTPException(status_code=400, detail="audio file is empty")
+
+    # Basic safety limit (25MB)
+    if len(audio_bytes) > 25 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="audio file too large (max 25MB)")
+
+    timestamp = storage.generate_timestamp()
+    base_dir = get_data_dir()
+
+    extension = os.path.splitext(file.filename)[1] or ".webm"
+    audio_path = write_audio_entry(
+        audio_bytes,
+        base_dir=base_dir,
+        timestamp=timestamp,
+        extension=extension,
+    )
+
+    try:
+        transcription = stt.transcribe_audio_path(str(audio_path))
+    except stt.SttDependencyError as e:
+        raise HTTPException(status_code=501, detail=str(e)) from e
+    except stt.SttTranscriptionError as e:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": str(e),
+                "timestamp": timestamp,
+                "audio_path": str(audio_path),
+            },
+        ) from e
+
+    entry_path = storage.write_entry(
+        text=transcription.text,
+        base_dir=base_dir,
+        timestamp=timestamp,
+    )
+
+    count = storage.count_entries_since_last_summary(base_dir)
+    trigger_count = get_summary_trigger_count()
+
+    if count >= trigger_count:
+        print(f"Triggering summarization: {count} entries since last summary (threshold: {trigger_count})")
+        background_tasks.add_task(run_summarization)
+
+    return AudioEntryOut(
+        timestamp=timestamp,
+        audio_path=str(audio_path),
+        entry_path=str(entry_path),
+        text=transcription.text,
+    )
 
 
 @app.post("/summarize")
