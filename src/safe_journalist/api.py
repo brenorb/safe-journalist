@@ -130,7 +130,7 @@ def create_entry(payload: TextEntryIn, background_tasks: BackgroundTasks) -> Tex
         print(f"Triggering summarization: {count} entries since last summary (threshold: {trigger_count})")
         background_tasks.add_task(run_summarization)
     
-    return TextEntryOut(path=str(path), timestamp=timestamp)
+    return TextEntryOut(path=str(path), timestamp=path.stem.removesuffix("-entry"))
 
 
 @app.post("/summarize")
