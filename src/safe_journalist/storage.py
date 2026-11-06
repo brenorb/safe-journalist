@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from itertools import count
 from pathlib import Path
 
 
 def generate_timestamp() -> str:
-    return datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    """Append precision after the legacy second stamp to preserve file ordering."""
+    return datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ.%f")
 
 
 def write_text_markdown(text: str, base_dir: str, timestamp: str) -> Path:
@@ -17,12 +19,23 @@ def write_text_markdown(text: str, base_dir: str, timestamp: str) -> Path:
 
 
 def write_entry(text: str, base_dir: str, timestamp: str) -> Path:
-    """Write an entry to /data/entries/<timestamp>-entry.md"""
+    """Create an entry without replacing an existing check-in."""
     entries_dir = Path(base_dir) / "entries"
     entries_dir.mkdir(parents=True, exist_ok=True)
-    path = entries_dir / f"{timestamp}-entry.md"
-    path.write_text(text, encoding="utf-8")
-    return path
+    for collision in count():
+        stamp = f"{timestamp}.{collision:06d}" if collision else timestamp
+        path = entries_dir / f"{stamp}-entry.md"
+        try:
+            stream = path.open("x", encoding="utf-8")
+        except FileExistsError:
+            continue
+        try:
+            with stream:
+                stream.write(text)
+        except (OSError, UnicodeError):
+            path.unlink(missing_ok=True)
+            raise
+        return path
 
 
 def write_summary(summary: str, base_dir: str, timestamp: str) -> Path:
