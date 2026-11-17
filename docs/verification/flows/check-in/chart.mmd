@@ -1,0 +1,35 @@
+---
+title: "Check in and keep the alert current"
+---
+stateDiagram-v2
+  direction LR
+  state "At the same time" as all {
+    state "Alert" as r0 {
+      s0: No alert yet
+      s1: Alert being written
+      s2: Alert current
+      s3: Alert out of date
+      [*] --> s0
+      s0 --> s1: someone presses summarize now [unless Nothing new]
+      s1 --> s2: the AI returns the alert
+      s1 --> s3: the AI call fails
+      s0 --> s1: the third new check-in starts an update [when Three new check-ins]
+      s2 --> s1: someone presses summarize now [unless Nothing new]
+      s3 --> s1: someone presses summarize now [unless Nothing new]
+      s2 --> s1: the third new check-in starts an update [when Three new check-ins]
+      s3 --> s1: the third new check-in starts an update [when Three new check-ins]
+    }
+    --
+    state "CheckIns" as r1 {
+      s4: Nothing new
+      s5: New check-ins waiting
+      s6: Three new check-ins
+      [*] --> s4
+      s4 --> s5: you check in
+      s5 --> s4: someone presses summarize now [unless Alert being written]
+      s4 --> s5: you check in during the update [when Alert being written]
+      s5 --> s6: you check in
+      s6 --> s4: someone presses summarize now [unless Alert being written]
+      s6 --> s4: the third new check-in starts an update
+    }
+  }
