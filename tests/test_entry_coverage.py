@@ -29,3 +29,22 @@ class TestEntryCoverage(TestCase):
             with self.assertRaises(FileExistsError):
                 storage.write_entry("second check-in", tmpdir, "20260117T120000Z")
 
+    def test_a_check_in_written_while_summarizing_reaches_the_next_summary(self) -> None:
+        # CheckIns.tla EveryCheckInReachesAnAlert: the AI call takes time, and
+        # the journalist can check in while it runs.
+        with TemporaryDirectory() as tmpdir:
+            storage.write_entry("arrived", tmpdir, storage.generate_timestamp())
+            session = Mock(spec=MapleSession)
+
+            def slow_call(**_):
+                storage.write_entry("followed by a car", tmpdir, storage.generate_timestamp())
+                return reply("first alert")
+
+            with patch("safe_journalist.summarizer.encrypted_openai_call", side_effect=slow_call):
+                summarizer.generate_summary(session=session, api_key="k", model="m", base_dir=tmpdir, client=MagicMock())
+
+            self.assertEqual(storage.count_entries_since_last_summary(tmpdir), 1)
+            with patch("safe_journalist.summarizer.encrypted_openai_call", return_value=reply("second alert")) as call:
+                summarizer.generate_summary(session=session, api_key="k", model="m", base_dir=tmpdir, client=MagicMock())
+            prompt = call.call_args.kwargs["payload"]["messages"][0]["content"]
+            self.assertIn("followed by a car", prompt)

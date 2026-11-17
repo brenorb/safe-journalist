@@ -21,6 +21,11 @@ def generate_summary(
     Returns:
         Tuple of (summary_path, summary_content) or None if no entries to summarize
     """
+    # The summary is named for the moment its entries are read, not when the
+    # AI call returns. A check-in written during the call is then newer than
+    # this summary and counts toward the next one instead of being skipped.
+    timestamp = storage.generate_timestamp()
+
     # Get all entries
     entries = storage.list_entries(base_dir)
     if not entries:
@@ -90,7 +95,6 @@ The summary should follow this format:
     )
     
     # Write summary to disk
-    timestamp = storage.generate_timestamp()
     summary_path = storage.write_summary(summary_text, base_dir, timestamp)
     
     print(f"✓ Summary generated: {summary_path}")
