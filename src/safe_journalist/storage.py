@@ -5,7 +5,12 @@ from pathlib import Path
 
 
 def generate_timestamp() -> str:
-    return datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    """UTC timestamp with microseconds, e.g. 20260117T123456123456Z.
+
+    Seconds alone gave two check-ins in the same second one file name. The
+    extra digits keep the names sortable alongside older second-only names.
+    """
+    return datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
 
 
 def write_text_markdown(text: str, base_dir: str, timestamp: str) -> Path:
@@ -21,7 +26,9 @@ def write_entry(text: str, base_dir: str, timestamp: str) -> Path:
     entries_dir = Path(base_dir) / "entries"
     entries_dir.mkdir(parents=True, exist_ok=True)
     path = entries_dir / f"{timestamp}-entry.md"
-    path.write_text(text, encoding="utf-8")
+    # Exclusive create: a check-in is never overwritten by another one.
+    with path.open("x", encoding="utf-8") as handle:
+        handle.write(text)
     return path
 
 

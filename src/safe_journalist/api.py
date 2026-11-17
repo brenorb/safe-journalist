@@ -112,15 +112,23 @@ def create_entry(payload: TextEntryIn, background_tasks: BackgroundTasks) -> Tex
     if not payload.text or not payload.text.strip():
         raise HTTPException(status_code=400, detail="text must be a non-empty string")
 
-    timestamp = storage.generate_timestamp()
     base_dir = get_data_dir()
     
-    # Write entry using new storage function
-    path = storage.write_entry(
-        text=payload.text,
-        base_dir=base_dir,
-        timestamp=timestamp,
-    )
+    # Write entry using new storage function; a name collision gets a fresh
+    # timestamp instead of overwriting the other check-in.
+    for _ in range(5):
+        timestamp = storage.generate_timestamp()
+        try:
+            path = storage.write_entry(
+                text=payload.text,
+                base_dir=base_dir,
+                timestamp=timestamp,
+            )
+            break
+        except FileExistsError:
+            continue
+    else:
+        raise HTTPException(status_code=503, detail="could not store the entry, try again")
     
     # Check if we should trigger summarization (count-based)
     count = storage.count_entries_since_last_summary(base_dir)
